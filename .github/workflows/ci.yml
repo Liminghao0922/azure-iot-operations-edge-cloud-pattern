@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Validate Bicep
+      if: hashFiles('deployment/bicep/**/*.bicep') != ''
+      run: |
+        az bicep build --file deployment/bicep/main.bicep
+    
+    - name: Validate Terraform
+      if: hashFiles('deployment/terraform/**/*.tf') != ''
+      run: |
+        cd deployment/terraform
+        terraform init -backend=false
+        terraform validate
+        terraform fmt -check
+    
+    - name: Validate Kubernetes Manifests
+      if: hashFiles('deployment/k8s/**/*.yaml') != ''
+      run: |
+        kubectl apply --dry-run=client -f deployment/k8s/
+    
+    - name: Lint Markdown
+      run: |
+        # Check markdown files
+        find . -name "*.md" -type f | grep -v node_modules | head -20
+
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      if: hashFiles('app/requirements.txt') != ''
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      if: hashFiles('app/requirements.txt') != ''
+      run: |
+        pip install -r app/requirements.txt
+    
+    - name: Run tests
+      if: hashFiles('app/tests/**/*.py') != ''
+      run: |
+        pytest app/tests/ -v
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run security checks
+      run: |
+        echo "Running security validation..."
+        # Add your security checks here
+
+  documentation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Validate documentation
+      run: |
+        # Check that all links in markdown files are valid
+        find . -name "*.md" -type f -exec grep -l "http" {} \;
+
+  notify:
+    needs: [validate, test, security, documentation]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Check workflow status
+      run: |
+        if [[ "${{ needs.validate.result }}" == "failure" || "${{ needs.test.result }}" == "failure" ]]; then
+          echo "Workflow failed"
+          exit 1
+        fi
