@@ -1,0 +1,152 @@
+# Data Flow Configurations for Azure IoT Operations
+# Based on Step 10 & 13: Data Flows Configuration
+# Defines two data flows:
+# 1. MQTT Broker to Microsoft Fabric (device data)
+# 2. HTTP Connector to Microsoft Fabric (WMS API data)
+
+---
+# Data Flow 1: MQTT Device Data → Fabric Real-Time Intelligence
+apiVersion: dataflow.iotoperations.azure.com/v1alpha1
+kind: DataFlow
+metadata:
+  name: mqtt-to-fabric
+  namespace: azure-iot-operations
+spec:
+  enabled: true
+  
+  # Data source: MQTT Broker topics
+  source:
+    type: mqtt
+    properties:
+      # Reference to MQTT broker
+      brokerRef: default
+      # Topics to subscribe
+      topics:
+        - "sensors/temperature"
+        - "sensors/humidity"
+        - "devices/status"
+      # Quality of Service
+      qos: 1
+      # Message buffering
+      sourceSettings:
+        maxInFlightMessages: 100
+  
+  # Optional: Data transformation (WASM module)
+  # transformations:
+  #   - type: wasm
+  #     uri: "http://my-registry.azurecr.io/transform:latest"
+  #     entrypoint: "transform_sensor_data"
+  
+  # Data destination: Azure Event Hubs (Fabric Real-Time Intelligence backing service)
+  destination:
+    type: eventhub
+    properties:
+      # Event Hub connection details (populate from Fabric)
+      eventHubNamespace: "<event-hub-namespace>"
+      eventHubName: "<event-hub-name>"
+      eventHubPath: "<event-hub-path>"
+      # Authentication using connection string from Key Vault
+      authentication:
+        type: connectionString
+        connectionStringRef: "fabric-event-hub-connection"
+      # Destination settings
+      destinationSettings:
+        batchSize: 100
+        batchTimeoutMs: 5000
+        maxRetries: 3
+        retryDelayMs: 1000
+
+---
+# Data Flow 2: HTTP Connector API Data → Fabric Real-Time Intelligence
+apiVersion: dataflow.iotoperations.azure.com/v1alpha1
+kind: DataFlow
+metadata:
+  name: http-connector-to-fabric
+  namespace: azure-iot-operations
+spec:
+  enabled: true
+  
+  # Data source: MQTT topics populated by HTTP Connector
+  # (HTTP Connector internally publishes to MQTT)
+  source:
+    type: mqtt
+    properties:
+      brokerRef: default
+      # Topics where HTTP Connector publishes (e.g., WMS inventory data)
+      topics:
+        - "wms/inventory/data"
+        - "wms/inventory/low-stock"
+        - "api/external/#"
+      qos: 1
+      sourceSettings:
+        maxInFlightMessages: 100
+  
+  # Optional: Data transformation
+  # transformations:
+  #   - type: wasm
+  #     uri: "http://my-registry.azurecr.io/enrich-wms:latest"
+  #     entrypoint: "enrich_inventory"
+  
+  # Data destination: Same Event Hub as Flow 1 or separate
+  destination:
+    type: eventhub
+    properties:
+      eventHubNamespace: "<event-hub-namespace>"
+      eventHubName: "<event-hub-name>"
+      eventHubPath: "<event-hub-path>"
+      authentication:
+        type: connectionString
+        connectionStringRef: "fabric-event-hub-connection"
+      destinationSettings:
+        batchSize: 100
+        batchTimeoutMs: 5000
+        maxRetries: 3
+
+---
+# Data Flow 3: Alternative Destination - Azure Blob Storage (Data Lake)
+# Uncomment and configure if you want to store data in Azure Data Lake
+# apiVersion: dataflow.iotoperations.azure.com/v1alpha1
+# kind: DataFlow
+# metadata:
+#   name: mqtt-to-datalake
+#   namespace: azure-iot-operations
+# spec:
+#   enabled: false
+#   source:
+#     type: mqtt
+#     properties:
+#       brokerRef: default
+#       topics:
+#         - "sensors/+"
+#         - "devices/+"
+#       qos: 1
+#
+#   destination:
+#     type: blobstorage
+#     properties:
+#       storageAccountName: "<storage-account-name>"
+#       containerName: "<container-name>"
+#       blobPath: "raw/{year}/{month}/{day}/{hour}"
+#       authentication:
+#         type: managedIdentity
+#         clientId: "<managed-identity-client-id>"
+
+---
+# Secret for Event Hub Connection String
+# This should be created separately with your actual Event Hub connection string
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fabric-event-hub-connection
+  namespace: azure-iot-operations
+type: Opaque
+stringData:
+  # Replace with your actual Event Hub connection string from Fabric
+  # Format: Endpoint=sb://...EventHubName=...SharedAccessKeyName=...SharedAccessKey=...
+  connection: "Endpoint=sb://<namespace>.servicebus.windows.net/;SharedAccessKeyName=<key-name>;SharedAccessKey=<key-value>;EntityPath=<event-hub-name>"
+
+---
+# Monitor Data Flow Status
+# kubectl get dataflow -n azure-iot-operations -o wide
+# kubectl describe dataflow mqtt-to-fabric -n azure-iot-operations
+# kubectl logs -n azure-iot-operations -l app=data-flow-runtime

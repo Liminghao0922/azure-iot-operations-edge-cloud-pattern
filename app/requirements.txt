@@ -1,0 +1,19 @@
+# Python Dependencies for Azure IoT Operations Application
+
+# MQTT Client Library
+paho-mqtt==1.7.2
+
+# Web Framework for Mock WMS API
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Utilities
+python-dotenv==1.0.0
+
+# Development & Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# CLI & Utilities
+click==8.1.7
+requests==2.31.0
