@@ -238,6 +238,26 @@ Azure IoT Operations supports these data sovereignty scenarios:
 | **OS**     | WSL2 Ubuntu 24.04 | Ubuntu Server 24.04 |
 | **K8s**    | K3s 1.31.1        | Latest K3s          |
 
+### Network Requirements
+
+To connect to Azure Arc and use Azure IoT Operations, your network must allow the following **outbound** connections:
+
+| Port | Target | Description |
+|------|--------|-------------|
+| **443** | `*.azure.com` | Azure services connectivity (HTTPS) |
+| **443** | `management.azure.com` | Azure Resource Manager |
+| **443** | `login.microsoftonline.com` | Azure AD authentication |
+| **443** | `mcr.microsoft.com` | Pull Azure Arc agent container images |
+| **443** | `*.servicebus.windows.net` | Azure Arc Cluster Connect and Custom Locations (WebSockets required) |
+| **443** | `guestnotificationservice.azure.com` | Cluster notification service |
+| **80** | `dl.k8s.io` | Kubernetes tools download |
+
+**Firewall Configuration Tips**:
+- All connections are **outbound** only
+- HTTP/HTTPS proxies are supported
+- If using an enterprise proxy, ensure it supports HTTPS/TLS interception
+- Detailed documentation: [Azure Arc Kubernetes Network Requirements](https://learn.microsoft.com/en-us/azure/azure-arc/kubernetes/network-requirements)
+
 ### Deployment Path
 
 ```

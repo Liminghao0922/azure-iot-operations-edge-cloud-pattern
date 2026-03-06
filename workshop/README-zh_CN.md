@@ -238,6 +238,26 @@ Azure IoT Operations支持以下数据主权场景:
 | **OS**   | WSL2 Ubuntu 24.04 | Ubuntu Server 24.04 |
 | **K8s**  | K3s 1.31.1        | Latest K3s          |
 
+### 网络要求
+
+为了连接到 Azure Arc 并使用 Azure IoT Operations，你的网络需要允许以下 **出站** 连接：
+
+| 端口 | 目标 | 说明 |
+|------|------|------|
+| **443** | `*.azure.com` | Azure 服务连接（HTTPS） |
+| **443** | `management.azure.com` | Azure 资源管理 |
+| **443** | `login.microsoftonline.com` | Azure AD 认证 |
+| **443** | `mcr.microsoft.com` | 拉取 Azure Arc 代理容器镜像 |
+| **443** | `*.servicebus.windows.net` | Azure Arc Cluster Connect 和 Custom Locations（需要 WebSockets） |
+| **443** | `guestnotificationservice.azure.com` | 集群通知服务 |
+| **80** | `dl.k8s.io` | Kubernetes 工具下载 |
+
+**防火墙配置建议**：
+- 所有连接都是 **出站** 的
+- 支持 HTTP/HTTPS 代理
+- 如使用企业代理，确保代理支持 HTTPS/TLS 截断检查
+- 详细文档：[Azure Arc Kubernetes 网络要求](https://learn.microsoft.com/en-us/azure/azure-arc/kubernetes/network-requirements)
+
 ### 部署路径
 
 ```
