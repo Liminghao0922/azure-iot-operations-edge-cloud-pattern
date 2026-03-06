@@ -2,7 +2,7 @@
 
 ---
 
-# Azure IoT Operations Edge-Cloud Pattern
+# Workshop Part 2: MQTT and Data Flow Configuration
 
 > **Production-Ready Reference Implementation for Industrial IoT Edge Computing**
 
@@ -70,23 +70,24 @@ Azure IoT Operations uses an **edge-cloud separation architecture** to achieve t
 Runs on your Kubernetes cluster (K3s/AKS/Arc-enabled):
 
 - **MQTT Broker**
+
   - Role: Edge message hub
   - Features: Multiple listeners, TLS encryption, authentication/authorization
   - Connectivity: Internal communication (ClusterIP) + External access (LoadBalancer)
   - Capacity: Scales to millions of messages/second
-
 - **HTTP/REST Connector**
+
   - Role: Third-party API integration
   - Functions: Periodic REST API polling, data transformation, auto-publish to MQTT
   - Supports: Authentication, retry logic, WASM data transformation
   - Use Cases: WMS systems, ERP interfaces, IoT gateway integration
-
 - **OPC UA Asset Discovery (Akri)**
+
   - Role: Automatic industrial device discovery
   - Functions: Network scanning for OPC UA servers, auto-creating digital twins
   - Benefits: Zero-config asset registration, real-time device status sync
-
 - **Data Flows**
+
   - Role: Data pipeline orchestration
   - Processing: MQTT → transformation → cloud data services
   - Configuration: Declarative topic mapping with flexible destination support
@@ -96,16 +97,17 @@ Runs on your Kubernetes cluster (K3s/AKS/Arc-enabled):
 Azure Portal and Azure Resource Manager provide centralized management:
 
 - **Azure Arc**
+
   - Role: Hybrid cloud connectivity runtime
   - Functions: Remote cluster management from Azure Portal
   - Authentication: Workload Identity, role-based authentication
-
 - **Device Registry**
+
   - Role: Device and asset metadata repository
   - Functions: Device tags, configuration templates, device grouping
   - Sync: Synchronizes with edge IoT Operations instances
-
 - **Schema Registry**
+
   - Role: Data schema version management
   - Storage: Azure Blob Storage-based schema repository
   - Functions: Data serialization, version evolution, backward compatibility
@@ -123,6 +125,7 @@ Devices/APIs → MQTT Broker → Data Flows → Microsoft Fabric / Event Hubs
 ```
 
 **Key Characteristics**:
+
 - All real-time processing happens at the edge (MQTT, Data Flow)
 - Only processed data goes to the cloud
 - Supports offline recovery with local message buffering
@@ -163,13 +166,14 @@ Azure IoT Operations' innovation lies in **decoupling the management plane from 
 
 ### Why This Design Matters
 
-| Scenario | Traditional IoT Issues | Azure IoT Ops Solution |
-|----------|------------------------|------------------------|
-| **GDPR Compliance** | Data forced to specific regions | Edge processing, only aggregated results to cloud |
-| **Low Latency Real-time** | High cloud round-trip latency | Edge real-time processing, millisecond response |
-| **Network Cost Optimization** | Three-layer separation wastes bandwidth | Minimize transmission, send only valuable data |
-| **Offline Robustness** | Fails when disconnected | Edge autonomous operation, syncs after recovery |
-| **Data Sensitivity** | Manufacturing secrets hard to protect | Core business data never leaves the factory |
+
+| Scenario                      | Traditional IoT Issues                  | Azure IoT Ops Solution                            |
+| ----------------------------- | --------------------------------------- | ------------------------------------------------- |
+| **GDPR Compliance**           | Data forced to specific regions         | Edge processing, only aggregated results to cloud |
+| **Low Latency Real-time**     | High cloud round-trip latency           | Edge real-time processing, millisecond response   |
+| **Network Cost Optimization** | Three-layer separation wastes bandwidth | Minimize transmission, send only valuable data    |
+| **Offline Robustness**        | Fails when disconnected                 | Edge autonomous operation, syncs after recovery   |
+| **Data Sensitivity**          | Manufacturing secrets hard to protect   | Core business data never leaves the factory       |
 
 ### Real-World Deployment Example
 
@@ -225,13 +229,14 @@ Azure IoT Operations supports these data sovereignty scenarios:
 
 ### System Requirements
 
-| Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| **Memory** | 16 GB RAM | 32 GB RAM |
-| **CPU** | 4 vCPUs | 8 vCPUs |
-| **Disk** | 50 GB SSD | 100+ GB SSD |
-| **OS** | WSL2 Ubuntu 24.04 | Ubuntu Server 24.04 |
-| **K8s** | K3s 1.31.1 | Latest K3s |
+
+| Resource   | Minimum           | Recommended         |
+| ---------- | ----------------- | ------------------- |
+| **Memory** | 16 GB RAM         | 32 GB RAM           |
+| **CPU**    | 4 vCPUs           | 8 vCPUs             |
+| **Disk**   | 50 GB SSD         | 100+ GB SSD         |
+| **OS**     | WSL2 Ubuntu 24.04 | Ubuntu Server 24.04 |
+| **K8s**    | K3s 1.31.1        | Latest K3s          |
 
 ### Deployment Path
 
@@ -334,6 +339,7 @@ workshop/
 ### Already Familiar?
 
 Jump directly to:
+
 - **MQTT Broker Configuration** → Part 2, Step 1
 - **Fabric Integration** → Part 2, Steps 2-3
 - **HTTP Connector** → Part 2, Steps 5-6
@@ -341,11 +347,10 @@ Jump directly to:
 
 ### Post-Workshop Project Ideas
 
-- [ ] Connect real devices instead of mock API
-- [ ] Configure production-grade TLS certificates (Let's Encrypt/Enterprise CA)
-- [ ] Implement custom WASM data transformation
-- [ ] Integrate with enterprise Active Directory authentication
-- [ ] Build multi-region/multi-cluster federated architecture
+- [ ]  Connect real devices instead of mock API
+- [ ]  Configure production-grade TLS certificates (Let's Encrypt/Enterprise CA)
+- [ ]  Implement custom WASM data transformation
+- [ ]  Build multi-region/multi-cluster federated architecture
 
 ---
 
@@ -384,120 +389,5 @@ From Edge to Cloud | From Zero to One | From Learning to Production
 </div>
 - Circuit breaker patterns
 
----
 
-## 📁 Repository Structure
-
-```
-.
-├── README.md                    # This file
-├── LICENSE                      # License information
-├── .gitignore                   # Git ignore rules
-│
-├── architecture/                # Architecture documentation
-│   ├── system-overview.png      # High-level architecture diagram
-│   ├── data-flow.png            # Data flow diagram
-│   └── design-decisions.md      # Design rationale and decisions
-│
-├── deployment/                  # Infrastructure as Code
-│   ├── bicep/                   # Azure Bicep templates
-│   ├── terraform/               # Terraform modules
-│   ├── helm/                    # Helm charts
-│   └── k8s/                     # Kubernetes manifests
-│
-├── app/                         # Application source code
-│   ├── src/                     # Source code
-│   └── tests/                   # Unit and integration tests
-│
-├── workshop/                    # Hands-on workshop guide
-│   ├── part1.md                 # Part 1 - Foundation
-│   ├── part2.md                 # Part 2 - Advanced Topics
-│   └── validation-checklist.md  # Post-deployment validation
-│
-├── docs/                        # Additional documentation
-│   ├── production-hardening.md  # Security and hardening
-│   ├── security.md              # Security considerations
-│   ├── troubleshooting.md       # Troubleshooting guide
-│   └── scalability.md           # Scalability patterns
-│
-├── diagrams/                    # Architecture diagrams (source files)
-│   └── drawio/                  # Draw.io editable files
-│
-├── .github/                     # GitHub configuration
-│   ├── ISSUE_TEMPLATE/          # Issue templates
-│   ├── pull_request_template.md # PR template
-│   └── workflows/               # CI/CD pipelines
-│       └── ci.yml               # Continuous integration
-│
-└── .gitignore                   # Git ignore patterns
-```
-
----
-
-## 📈 When to Use This Pattern
-
-This pattern is suitable when:
-
-- You need <use case scenario>
-- Data must remain at the edge
-- AI inference must integrate with enterprise systems
-- Production-grade reliability is required
-
-**Not suitable when:**
-
-- Only simple demo is needed
-- No security constraints exist
-- No scalability requirements
-
----
-
-## 🔗 Related Patterns
-
-- [Related Pattern 1](link)
-- [Related Pattern 2](link)
-- [Related Pattern 3](link)
-
----
-
-## 📝 Versioning
-
-| Version | Date | Notes |
-|---------|------|-------|
-| v1.0    | YYYY-MM-DD | Initial release |
-
----
-
-## 🤝 Contribution Guidelines
-
-Contributions should:
-
-- Maintain architectural consistency
-- Follow production-ready standards
-- Include validation steps
-- Update documentation accordingly
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## 🏁 Final Note
-
-**This repository is not a demo.**
-
-It represents a deployable architectural pattern designed for real-world AI application engineering.
-
-For questions or issues, please open an issue or contact the maintainers.
-
----
-
-<div align="center">
-
-**AI Application Engineering Hub**
-
-*Building Production-Grade AI Systems*
-
-</div>
+- Circuit breaker patterns---

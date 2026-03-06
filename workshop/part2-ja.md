@@ -1,4 +1,4 @@
-# Azure IoT Operations - Hands-On 下半分 (Part 2)
+# Workshop Part 2: MQTTとデータフロー設定
 
 本パートは Part 1 の続きとして、MQTT Broker の設定、Data Flow の構築、エンドツーエンドのテストを扱います。
 
