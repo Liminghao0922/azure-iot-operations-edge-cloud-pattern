@@ -4,10 +4,10 @@
 
 通过本部分，你将：
 
-- [ ]  理解本方案架构
-- [ ]  完成开发环境准备
-- [ ]  部署基础设施
-- [ ]  配置核心服务
+- [ ] 理解本方案架构
+- [ ] 完成开发环境准备
+- [ ] 部署基础设施
+- [ ] 配置核心服务
 
 ## ⏱ 预计时长：3小时
 
@@ -18,8 +18,8 @@
   - 所需权限：为了快速完成部署，推荐使用订阅的**Owner**角色，关于最小权限要求请参考：[Azure IoT Operations部署所需权限](https://learn.microsoft.com/azure/iot-operations/deploy-iot-ops/overview-deploy#required-permissions)
 - 基本Kubernetes知识
 
-> **💡 补充说明**  
-> 本文主要采用基于WSL2（Ubuntu）的部署环境。如果你已有Ubuntu环境，可以跳过Step 1中"安装和配置WSL2"和"安装Ubuntu"的步骤。  
+> **💡 补充说明**
+> 本文主要采用基于WSL2（Ubuntu）的部署环境。如果你已有Ubuntu环境，可以跳过Step 1中"安装和配置WSL2"和"安装Ubuntu"的步骤。
 > 关于具体支持的环境，请参考：[Azure IoT Operations支持的环境](https://learn.microsoft.com/azure/iot-operations/deploy-iot-ops/overview-deploy#supported-environments)
 
 ## 🚀 步骤
@@ -30,24 +30,32 @@
 
 - 更新WSL2到最新版本
 - 检查WSL2版本
-- 创建WSL配置文件以启用DNS隧道
 
 ```powershell
 wsl --update
 wsl --version
-@"
-[wsl2]
-dnsTunneling=true
-"@ | Set-Content -Path $HOME\.wslconfig
 ```
 
-2. 安装Ubuntu
+2. 确保DNS Tuning已启用
+
+- 按照WSL2官方推荐，启用DNS Tuning以改善DNS查询性能
+- 打开Settings应用，按照以下步骤操作：
+
+> 💡 **步骤说明**：
+>
+> - 打开Settings → System → WSL Settings
+> - 找到DNS Tuning选项并启用
+>   ![DNS Tuning启用步骤截图](image/dns-tuning-settings.png)
+
+3. 安装Ubuntu
 
 ```powershell
 wsl --install Ubuntu
 ```
 
-3. 安装必要工具
+![Ubuntu 安装存储库](image/ubuntu-installation.png)
+
+4. 安装必要工具
 
 - 安装Azure CLI
   ```bash
@@ -58,7 +66,7 @@ wsl --install Ubuntu
   az extension add --upgrade --name connectedk8s
   ```
 - kubectl（K3s自动安装）
-- Helm（可选）
+- Helm
   ```bash
   sudo apt-get install curl gpg apt-transport-https --yes
   curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
@@ -66,7 +74,6 @@ wsl --install Ubuntu
   sudo apt-get update
   sudo apt-get install helm
   ```
-
 
 ### Step 2: 创建和配置Kubernetes集群 (30分钟)
 
@@ -115,21 +122,32 @@ kubectl get pods --all-namespaces
 ```
 
 预期：kube-system命名空间Pod为Running或Completed。
+![Kubernetes Pod 程序状态验证](image/cluster-pods-status.png)
 
-6. 创建项目目录并在VS Code中打开
+6. 创建项目目录，克隆Github Repository并在VS Code中打开
 
 ```bash
-mkdir -p projects/aiodemo
-code projects/aiodemo
+cd ~
+mkdir projects
+git clone https://github.com/Liminghao0922/azure-iot-operations-edge-cloud-pattern
+cd azure-iot-operations-edge-cloud-pattern/
+code .
 ```
 
-- VS Code Kubernetes扩展：[Kubernetes - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools) （可选）
+- VS  Code Python扩展：[Python - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
+- VS Code Kubernetes扩展：[Kubernetes - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools) （可选但推荐）
 
 安装该插件后，VS Code左侧会出现Kubernetes图标，点击后可以看到当前集群状态和资源。
+![VS Code Kubernetes 扩展界面](image/vscode-kubernetes-extension.png)
 
 ### Step 3: Azure Arc启用 (30分钟)
 
-1. 注册Azure资源提供程序（只需一次）
+1. 登录Azure
+
+   ```
+   az login
+   ```
+2. 注册Azure资源提供程序（只需一次）
 
 ```bash
 az provider register -n "Microsoft.ExtendedLocation"
@@ -140,22 +158,21 @@ az provider register -n "Microsoft.DeviceRegistry"
 az provider register -n "Microsoft.SecretSyncController"
 ```
 
-2. 登录Azure并创建资源组
+3. 创建资源组
 
 ```bash
-az login
-az group create --location eastus --resource-group rg-demo-aio-eastus
+az group create --location japaneast --name rg-demo-aio
 ```
 
 验证：应看到资源组创建的JSON响应。
 
-3. Arc启用集群
+4. Arc启用集群
 
 ```bash
 az connectedk8s connect \
   --name aiocluster \
   -l eastus \
-  --resource-group rg-demo-aio-eastus \
+  --resource-group rg-demo-aio\
   --enable-oidc-issuer \
   --enable-workload-identity \
   --disable-auto-upgrade
@@ -163,18 +180,20 @@ az connectedk8s connect \
 
 预期：命令成功完成（需几分钟）。
 
-4. 验证Arc代理
+5. 验证Arc代理
 
 ```bash
 kubectl get deployments,pods -n azure-arc
-# 所有Pod应为Running
 ```
 
-5. 获取OIDC Issuer URL
+所有Pod应为Running
+![Azure Arc 代理下载殡批源页面](image/arc-agents-verification.png)
+
+6. 获取OIDC Issuer URL
 
 ```bash
 az connectedk8s show \
-  --resource-group rg-demo-aio-eastus \
+  --resource-group rg-demo-aio\
   --name aiocluster \
   --query oidcIssuerProfile.issuerUrl \
   --output tsv
@@ -182,34 +201,40 @@ az connectedk8s show \
 
 保存此URL，后续步骤需要。
 
-6. 配置K3s API服务器
+7. 配置K3s API服务器
 
 ```bash
 sudo nano /etc/rancher/k3s/config.yaml
-# 添加如下内容（替换<SERVICE_ACCOUNT_ISSUER>为上一步URL）
+```
+
+添加如下内容（替换<SERVICE_ACCOUNT_ISSUER>为上一步URL）
+
+```
 kube-apiserver-arg:
   - service-account-issuer=<SERVICE_ACCOUNT_ISSUER>
   - service-account-max-token-expiration=24h
-# 保存并退出
 ```
 
-7. 启用自定义位置功能
+保存并退出<Ctrl+X, Y, Enter>
+
+8. 启用自定义位置功能
 
 ```bash
 export OBJECT_ID=$(az ad sp show --id bc313c14-388c-4e7d-a58e-70017303ee3b --query id -o tsv)
 az connectedk8s enable-features \
   -n aiocluster \
-  -g rg-demo-aio-eastus \
+  -g rg-demo-aio \
   --custom-locations-oid $OBJECT_ID \
   --features cluster-connect custom-locations
 ```
 
-8. 重启K3s
+重启K3s
 
 ```bash
 sudo systemctl restart k3s
-# 等待1-2分钟
 ```
+
+等待1-2分钟
 
 ### Step 4: 通过Azure门户部署Azure IoT Operations (30分钟)
 
@@ -221,14 +246,16 @@ sudo systemctl restart k3s
 
 2. 基础配置（Basics标签）
 
-   | 参数                     | 值                 |
-   | ------------------------ | ------------------ |
-   | Subscription             | 选择你的订阅       |
-   | Resource group           | rg-demo-aio-eastus |
-   | Cluster name             | aiocluster         |
-   | Custom location name     | 默认或自定义       |
-   | Deployment version       | 1.2 (latest)       |
-   | 点击 Next: Configuration |                    |
+   | 参数                     | 值           |
+   | ------------------------ | ------------ |
+   | Subscription             | 选择你的订阅 |
+   | Resource group           | rg-demo-aio  |
+   | Cluster name             | aiocluster   |
+   | Custom location name     | 默认或自定义 |
+   | Deployment version       | 1.2 (latest) |
+   | 点击 Next: Configuration |              |
+
+   ![Basics](image/basics-configuration.png)
 3. 配置设置（Configuration标签）
 
    | 参数                             | 说明         |
@@ -237,39 +264,81 @@ sudo systemctl restart k3s
    | MQTT broker configuration        | 默认（测试） |
    | Data flow profile configuration  | 默认（测试） |
    | 点击 Next: Dependency management |              |
+
+   ![Configuration](image/configuration-settings.png)
 4. 依赖管理 - Schema Registry
 
 - 选择 Create new
 - 填写名称、命名空间
 - 选择或创建存储账户与容器
+  ![Schema Registry 创建窗口](image/schema-registry-create.png)
+  ![Schema Registry 容器配置](image/schema-registry-container.png)
 - 点击 Apply
+  ![Schema Registry 应用设置](image/schema-registry-apply.png)
 
 5. 依赖管理 - Device Registry
 
 - 选择 Create new
 - 填写基础信息（订阅、资源组、名称、区域）
 - 完成创建并选择新命名空间
+  ![Device Registry 创建窗口](image/device-registry-create.png)
 
-6. 测试设置
+6. 安全设置
 
-- 选择 Test settings 部署选项
-- 点击 Next: Automation
+- 选择 **Secure settings** 部署选项
+- **Key Vault 配置**
+
+  - 选择现有 Key Vault 或创建新的
+  - 确保 Key Vault 已启用 RBAC（基于角色的访问控制）并且给作业用户赋予了 `Key Vault Secrets Officer`角色
+    ![Key Vault 安全配置界面](image/keyvault-configuration.png)
+- **Managed Identity 配置**
+
+  - 创建用于同步密钥的托管标识
+    ![Managed Identity 密钥同步配置界面](image/managed-identity-key-sync.png)
+  - 创建用于进行云链接的托管标识
+    ![Managed Identity 云链接配置界面](image/managed-identity-cloud-link.png)
+- 点击 **Automation >**
+  ![Automation 标签及所有配置](image/automation-tab.png)
+
+> **💡 提示**：
+>
+> - 生产环境强烈推荐使用 Secure settings
+> - 使用 Managed Identity 避免在代码中硬编码凭据
+> - Key Vault 应启用软删除和清除保护
+> - 消息信息可以参考[Enable secure settings in Azure IoT Operations | Microsoft Learn](https://learn.microsoft.com/en-us/azure/iot-operations/deploy-iot-ops/howto-enable-secure-settings?tabs=bash)
 
 ### Step 5: 运行部署命令 (30-60分钟)
 
 1. 获取并运行门户Automation标签中的Azure CLI命令
+   ![Automation 初始化命令](image/automation-init-command.png)
 2. 依次运行：
 
 - 交互式登录Azure
+
   ```bash
   az login
   ```
 - 安装Azure IoT Operations CLI扩展
+
   ```bash
   az extension add --upgrade --name azure-iot-ops
   ```
-- 初始化集群（如需）# 复制门户命令 az iot ops init
-- 部署Azure IoT Operations# 复制门户命令 az iot ops create
+- 创建schema registry，注意自动生成的脚本不会指定location，我们这里需要明确指定 `--location eastus`。
+
+  ```bash
+  az iot ops schema registry create  \
+   --subscription <subscription-id>  \
+   -g rg-demo-aio  \
+   -n my-iot-reg  \
+   --registry-namespace my-iot-reg-ns  \
+   --sa-resource-id /subscriptions/<subscription-id>/resourceGroups/rg-demo-aio/providers/Microsoft.Storage/storageAccounts/saiot   \
+   --sa-container iotconfig  \
+   --location eastus
+  ```
+- 初始化集群（10几分钟）# 复制门户命令 `az iot ops init`
+- 部署Azure IoT Operations (30分钟) # 复制门户命令 `az iot ops create`
+  ![Automation 部署命令](image/automation-create-command.png)
+- 启动密钥同步 # 复制门户命令 `az iot ops secretsync enable`
 - 注意：长运行命令可在终端查看进度
 
 3. 等待所有命令完成，关闭门户向导
@@ -282,21 +351,15 @@ sudo systemctl restart k3s
 az iot ops check
 ```
 
-预期：会有缺失数据流警告，属正常
-2. 详细健康检查
+预期：
+![IoT Operations 健康检查结果](image/health-check-result.png)
+2. 检查broker详细健康检查
 
 ```bash
-az iot ops check --detail-level 2
+az iot ops check --svc broker --detail-level 1
 ```
 
-显示主题映射、QoS、消息路由配置
-3. 查看已安装CLI版本
-
-```bash
-az iot ops get-versions
-```
-
-4. 访问Operations UI
+3. 访问Operations UI
 
 - 打开 [IoT Operations UI](https://iotoperations.azure.com/)
 - 使用Microsoft Entra ID登录
@@ -304,21 +367,12 @@ az iot ops get-versions
 
 ## ✅ 验证清单
 
-- [ ]  集群已运行
-- [ ]  所有Pod为Running状态
-- [ ]  服务分配了IP地址
-- [ ]  健康端点可访问
-- [ ]  日志已收集
-- [ ]  指标已收集
-
-## 📌 关键概念
-
-- **Namespaces**：逻辑隔离
-- **Deployments**：管理Pod副本
-- **Services**：网络暴露Pod
-- **Ingress**：流量路由
-- **ConfigMaps**：非敏感配置
-- **Secrets**：敏感数据管理
+- [ ] 集群已运行
+- [ ] 所有Pod为Running状态
+- [ ] 服务分配了IP地址
+- [ ] 健康端点可访问
+- [ ] 日志已收集
+- [ ] 指标已收集
 
 ## 🔗 相关资源
 
@@ -362,7 +416,6 @@ az iot ops get-versions
 - 门户部署 (Step 4)：30分钟
 - 运行部署命令 (Step 5)：30-60分钟
 - 验证 (Step 6)：10分钟
-- 部署等待 (Step 7)：10-15分钟
 
 **总计：约3小时**
 
@@ -370,17 +423,8 @@ az iot ops get-versions
 
 ## 🎉 Part 1 完成！下一步
 
-恭喜！已完成Part 1全部步骤。请继续 [Part 2: MQTT和数据流配置](./hands-on-guide-part2-zh.md)
-
-Part 2将从Step 8开始，指导：
-
-- 配置MQTT Broker及多端口监听
-- 集成Microsoft Fabric实时智能
-- 部署HTTP Connector拉取REST API数据
-- 端到端测试与故障排查
-
-预计耗时：4.5小时
+恭喜！已完成Part 1全部步骤。请继续 [Part 2: MQTT和数据流配置](./part2-zh.md)
 
 ---
 
-**最后更新**：2026年2月28日
+**最后更新**：2026年3月4日
