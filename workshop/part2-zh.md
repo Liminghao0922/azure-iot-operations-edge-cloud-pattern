@@ -181,7 +181,7 @@ kubectl get svc -n azure-iot-operations
    --identity-name mi-dataflow-fabric \
    --resource-group rg-demo-aio \
    --issuer $OIDC_ISSUER \
-   --subject system:serviceaccount:azure-iot-operations:aio-dataflow-default \
+   --subject system:serviceaccount:azure-iot-operations:aio-dataflow \
    --audience api://AzureADTokenExchange
    ```
 4. 赋予Managed Identity 访问Fabric的权限。

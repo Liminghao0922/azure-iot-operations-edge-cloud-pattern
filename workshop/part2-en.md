@@ -86,7 +86,7 @@ kubectl get svc -n azure-iot-operations
 Find your listener service and note the endpoint, e.g., `<external-ip>:1883` (test) or `<external-ip>:8883` (TLS).
 
 ![Service endpoints](image/service-endpoints-kubectl.png)
-----------------------------------------------------------------
+---------------------------------------------------------
 
 ## Step 2: Create Microsoft Fabric Real-Time Intelligence Data Source (25 minutes)
 
@@ -176,7 +176,7 @@ In the Details pane, note:
    --identity-name mi-dataflow-fabric \
    --resource-group rg-demo-aio \
    --issuer $OIDC_ISSUER \
-   --subject system:serviceaccount:azure-iot-operations:aio-dataflow-default \
+   --subject system:serviceaccount:azure-iot-operations:aio-dataflow \
    --audience api://AzureADTokenExchange
    ```
 4. Grant Managed Identity access to Fabric
@@ -526,8 +526,8 @@ newgrp docker
    ![Create connector template](image/http-connector-template-create.png)
 4. Select:
 
-    - **Connector name**: `Azure IoT Operations connector for REST/HTTP`
-       ![Select REST/HTTP connector](image/http-connector-template-select.png)
+   - **Connector name**: `Azure IoT Operations connector for REST/HTTP`
+     ![Select REST/HTTP connector](image/http-connector-template-select.png)
 5. Continue with defaults and click **Create**
    ![Confirm connector template](image/http-connector-template-review-create.png)
 
@@ -569,7 +569,8 @@ kubectl get svc -n app | grep mock-wms-api
      - `Anonymous` (for testing)
      - `Username password` (if needed)
      - `X509 certificate` (if needed)
-   ![HTTP endpoint configuration](image/http-endpoint-config.png)
+       ![HTTP endpoint configuration](image/http-endpoint-config.png)
+
    > **Network note**: Using full Service DNS enables cross-namespace access without host networking.
    >
 7. Click **Save**
@@ -594,7 +595,8 @@ kubectl get svc -n app | grep mock-wms-api
    - **Transform**: empty
 
    > **Important**: **Sampling interval** is required; otherwise `Failed to parse dataset configuration`.
-   ![Dataset configuration](image/dataset-config.png)  (Sampling interval required)
+   > ![Dataset configuration](image/dataset-config.png)  (Sampling interval required)
+   >
 6. Click **Next**
 7. Review and click **Create**
    ![Asset review](image/asset-review-create.png)
@@ -668,7 +670,8 @@ In Details pane:
    - **Client ID**: from `mi-dataflow-fabric`
    - **Tenant ID**: same Tenant ID
 6. Click **Apply**
-![Fabric RTI endpoint for WMS](image/dataflow-endpoint-wms.png)
+   ![Fabric RTI endpoint for WMS](image/dataflow-endpoint-wms.png)
+
 > **Note**: Both Data Flow endpoints use the same Managed Identity and different Fabric Event Streams.
 
 ### Step 6.5: Create Data Flow from HTTP Connector to Fabric
@@ -682,19 +685,18 @@ HTTP Connector publishes to `aio/data/wms/inventory`. Create a Data Flow to forw
 
    - **Source**: **Asset** → previously created asset (e.g., **wms**)
    - **Source Details**: **Dataset** `inventory`
-   ![Dataflow source asset selection](image/dataflow-wms-source-asset.png)
+     ![Dataflow source asset selection](image/dataflow-wms-source-asset.png)
    - **Transform**: None
    - **Destination**: **fabric-rti-wms-endpoint**
-
    - Copy Topic from the WMS Event Stream
-    ![Dataflow destination topic](image/dataflow-wms-destination-topic.png)
+     ![Dataflow destination topic](image/dataflow-wms-destination-topic.png)
 5. Click **Save**, enter settings, then **Save** again
 
    - **Data flow name**: e.g., **df-wms-inventory**
    - **Enable data flow**: **Yes**
    - **Request data persistence**: **Yes**
    - **Data flow profile**: **default**
-   ![Dataflow save settings](image/dataflow-wms-save-settings.png)
+     ![Dataflow save settings](image/dataflow-wms-save-settings.png)
 
 ## Step 7: End-to-end test for Flow 2 (25 minutes)
 
@@ -708,7 +710,7 @@ HTTP Connector publishes to `aio/data/wms/inventory`. Create a Data Flow to forw
 
 **Expected**: HTTP Connector pulls WMS data every 10 seconds and sends to Fabric via MQTT Broker.
 ![Fabric WMS data preview](image/fabric-wms-data-preview.png)
----
+-------------------------------------------------------------
 
 ## Estimated Time (Part 2)
 
